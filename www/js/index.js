@@ -1,21 +1,5 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
+//var url = "http://10.1.20.140/webapps/Jans%20Planer/www/api.php?";
+var url = "api.php?";
 var app = {
     // Application Constructor
     initialize: function() {
@@ -48,52 +32,110 @@ var app = {
     }
 };
 
-$( "#id01" ).click(function(){
-    $('#id02').html("Warten");
+$( "#login" ).click(function(){
     $.ajax({
-        //url:"http://10.1.20.140/webapps/Jans%20Planer/www/api.php?fn=getUser",
-        url:"api.php?fn=getUser",
-        type:"GET",
+        url:url+"fn=getUser",
+        type:"POST",
+        data:{'Email':$('#email').val(), 'Name':$('#name').val()},
         success:function(msg){
-            $('#id02').html(msg[0]['id']);
-        },
-        error:function(xhr, ajaxOptions, thrownError){
-            $('#id02').html("ERROR" + xhr.responseText + thrownError);
-        },
-        dataType:"json"
-    });
-});
-
-$( "body" ).ready(function(){
-    $.ajax({
-        //url:"http://10.1.20.140/webapps/Jans%20Planer/www/api.php?fn=getVeranstaltungen",
-        url:"api.php?fn=getVeranstaltungen",
-        type:"GET",
-        success:function(msg){
-            $('#content').html(msg);
-            
-            $( ".info" ).click(function(){
-                $("body").load("info.html");
-                var id = $(this).attr('id');
-                $.ajax({
-                    //url:"http://10.1.20.140/webapps/Jans%20Planer/www/api.php?fn=getVeranstaltungenInfos",
-                    url:"api.php?fn=getVeranstaltungenInfos",
-                    type:"POST",
-                    data:{'vid':id, 'uid':1},
-                    success:function(msg){
-                        $('#content').html(msg);
-                        
-                        
-                    },
-                    error:function(xhr, ajaxOptions, thrownError){
-                        console.log("ERROR" + xhr.responseText + thrownError);
-                    }
-                });
-            });
-            
+            if(msg != "null"){
+                window.location = "veranstaltungen.html";
+            }
+            else{
+                $('#alert').html('<div class="alert alert-danger"><strong>Error!</strong> Name oder Email falsch. Bitte überprüfen!</div>');
+            }
         },
         error:function(xhr, ajaxOptions, thrownError){
             console.log("ERROR" + xhr.responseText + thrownError);
         }
     });
 });
+
+$( "#go" ).ready(function(){
+    if($(this)[0].title == "Jan's Planer Veranstaltungen")
+    {
+        $.ajax({
+            url:url+"fn=getVeranstaltungen",
+            type:"GET",
+            success:function(msg){
+                $('#content').html(msg);
+                
+                $( ".info" ).click(function(){
+                    var id = $(this).attr('id');
+                    window.location = "info.html?iid="+id;
+                });
+                
+            },
+            error:function(xhr, ajaxOptions, thrownError){
+                console.log("ERROR" + xhr.responseText + thrownError);
+            }
+        });
+    }
+});
+
+$().ready(function(){
+    loadinfo($(this)[0].title);
+})
+
+function loadinfo(titel)
+{
+    if(titel == "Jan's Planer Info"){
+        var iid = $.urlParam('iid');
+        $.ajax({
+            url:url+"fn=getVeranstaltungenInfos",
+            type:"POST",
+            data:{'vid':iid},
+            success:function(msg){
+                $('#content').html(msg);
+                
+                
+                $( ".btn" ).click(function(){
+                    var id = $(this).attr('id').split('|');
+                    if(id[0] == 'Z'){
+                        $.ajax({
+                            url:url+"fn=zusagen",
+                            type:"POST",
+                            data:{'vid':id[1]}
+                        }).done(function(asd){
+                                loadinfo($(document)[0].title);
+                            });
+                    }
+                    else if(id[0] == 'A'){
+                        $.ajax({
+                            url:url+"fn=absagen",
+                            type:"POST",
+                            data:{'vid':id[1]}
+                        }).done(function(asd){
+                                loadinfo($(document)[0].title);
+                            });
+                    }
+
+                });
+                
+                                
+                $( "button.btn" ).click(function() {
+                    var el = "#"+$(this).attr('id')+"T";
+                    if($(el).attr('style') == 'display: none;'){                      
+                        $(el).slideDown();
+                    }
+                    else{
+                        $(el).slideUp();
+                    }
+                });
+            },
+            error:function(xhr, ajaxOptions, thrownError){
+                console.log("ERROR" + xhr.responseText + thrownError);
+            }
+        });
+    }
+}
+
+$.urlParam = function(name){
+    var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+    if (results==null){
+       return null;
+    }
+    else{
+       return results[1] || 0;
+    }
+}

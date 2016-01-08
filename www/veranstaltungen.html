@@ -13,7 +13,7 @@
         <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
         <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
 
-        <title>Jan's Planer</title>
+        <title>Jan's Planer Veranstaltungen</title>
         
         <link rel="stylesheet" type="text/css" href="css/index.css" />
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
@@ -34,7 +34,7 @@
     </head>
     
     
-    <body>
+    <body id="go">
         <!-- Navigation -->
         <script>
             $(function(){
@@ -44,12 +44,14 @@
         <div id="includedContentnav"></div>
 
         <!-- Page Content -->
-        <div class="container">
+        <div  class="container">
 
             <!-- Page Heading -->
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header">Login</h1>
+                    <h1 class="page-header">Veranstaltungen
+                        <small>Übersicht</small>
+                    </h1>
                 </div>
             </div>
             <!-- /.row -->
@@ -69,26 +71,7 @@
 
             <hr>
             
-            <div id="content">
-                
-                <div class="row">
-                    <div class="col-md-12">
-                        <div id="alert"></div>
-                        <div role="form">
-                            <div class="form-group">
-                                <label for="name">Name:</label>
-                                <input type="text" class="form-control" id="name">
-                            </div>
-                            <div class="form-group">
-                                <label for="email">Email address:</label>
-                                <input type="email" class="form-control" id="email">
-                            </div>
-                            <button id="login" type="submit" class="btn btn-default btn-block">Login</button>
-                        </div>
-                    </div>
-                </div>
-                
-            </div>
+            <div id="content"></div>
 
             <!-- Footer -->
             <script>
