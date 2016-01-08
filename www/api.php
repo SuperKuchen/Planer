@@ -1,5 +1,4 @@
 <?php
-
 session_start();
 
     if(isset($_GET['fn']))
@@ -33,6 +32,13 @@ session_start();
                     absagen($_POST['vid'],$_SESSION['user']['id']);
                 break;
             }
+            case 'createVer':{
+                if(isset($_POST['name']) && $_SESSION['user']['id'] == 1)
+                {
+                    createVer($_POST['name'], $_POST['ort'], $_POST['bild'], $_POST['beschreibung']);
+                }
+                break;
+            }
         }
     }
 
@@ -46,201 +52,326 @@ session_start();
         // Create connection
         $conn = new mysqli($servername, $username, $password, $dbname);
         // Check connection
-        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
-        } 
+        if ($conn->connect_errno) {
+            echo "Failed to connect to MySQL: (" . $conn->connect_errno . ") " . $conn->connect_error;
+        }
         return $conn;
     }
     
     function getUser($name, $email)
-    {
+    {       
         $conn = connect();
-        $sql = "SELECT * FROM tbluser WHERE Name = '".$name."' AND Email = '".$email."';";
-        $result = $conn->query($sql);
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
+        
+        if (!($stmt = $conn->prepare("SELECT * FROM tbluser WHERE Name = '".$name."' AND Email = '".$email."'"))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        
+        $out_id    = NULL;
+        $out_name = NULL;
+        $out_email = NULL;
+        if (!$stmt->bind_result($out_id, $out_name,$out_email)) {
+            echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
+        }
+        
+        while ($stmt->fetch()) {
             $user = array(
-                "id" => $row["ID"],
-                "Name" => $row["Name"],
-                "Email" => $row["Email"]
+                "id" => $out_id,
+                "Name" => $out_name,
+                "Email" => $out_email
             );
-            $_SESSION['user'] = $user;
-            echo "login";
-        } else {
+            $_SESSION['user'] = $user;  
+            echo "login";          
+        }
+        if(!isset($user))
+        {
             echo "null";
         }
-        $conn->close();
+        $stmt->close();
+    }
+    
+    function createVer($uename,$ueort,$uebild,$uebeschreibung){
+        $conn = connect();
+        if (!($stmt = $conn->prepare("INSERT INTO `tblveranstaltungen`(`ID`, `Name`, `Ort`, `Bild`, `Beschreibung`) VALUES (?,?,?,?,?)"))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        $stmt->bind_param('issss',$id,$name,$ort,$bild,$beschreibung);
+        $id=NULL;
+        $name=$uename;
+        $ort=$ueort;
+        $bild=$uebild;
+        $beschreibung=$uebeschreibung;
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        echo $stmt->insert_id;
+        $stmt->close();
     }
     
     function getVeranstaltungen($uid){
+        if($uid == 1){
+            $html = '<div class="row"><div class="col-md-12"><button style="width:100%" type="button" class="btn btn-primary" id="neu">Neu</button></div></div><hr>';
+        }
+        else{
+            $html= '';
+        }
+        
         $conn = connect();
-        $sql = "SELECT ID,'Name',Ort,Bild,Beschreibung FROM tblveranstaltungen JOIN tbluserveranstaltungen ON ID = fkveranstaltungenid WHERE fkuserid = ".$uid;
-        $result = $conn->query($sql);
-        $html = "";
-        if ($result->num_rows > 0) {
-            while($row = $result->fetch_assoc()) {
-                $html.= '<div class="row">';
-                            if($row["Bild"] != null){
-                                $html.='<div class="col-md-12">
-                                            <a class="info" id="'.$row["ID"].'">
-                                                <img class="img-responsive" src="'.$row["Bild"].'" alt="">
-                                            </a>
-                                        </div>';
-                            }
-                            
-                            $html.= '<div class="col-md-12">
-                                            <h3>'.$row["Name"].'</h3>
-                                            <h4>Wo: '.$row["Ort"].'</h4>
-                                            <p>'.$row["Beschreibung"].'</p>
-                                            <a class="btn btn-primary info" id="'.$row["ID"].'">Mehr Infos <span class="glyphicon glyphicon-chevron-right"></span></a>
-                                        </div>
-                                    </div>
-                                    <hr>';
+        if (!($stmt = $conn->prepare("SELECT ID,'Name',Ort,Bild,Beschreibung FROM tblveranstaltungen JOIN tbluserveranstaltungen ON ID = fkveranstaltungenid WHERE fkuserid = ".$uid))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        
+        $out_id    = NULL;
+        $out_name = NULL;
+        $out_ort = NULL;
+        $out_bild = NULL;
+        $out_beschreibung = NULL;
+        if (!$stmt->bind_result($out_id, $out_name,$out_ort,$out_bild,$out_beschreibung)) {
+            echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
+        }
+        
+        while ($stmt->fetch()) {
+            $html.= '<div class="row">';
+            if($out_bild != null){
+                $html.='<div class="col-md-12">
+                            <a class="info" id="'.$out_id.'">
+                                <img class="img-responsive" src="'.$out_bild.'" alt="">
+                            </a>
+                        </div>';
             }
-        } else {
+            
+            $html.= '<div class="col-md-12">
+                            <h3>'.$out_name.'</h3>
+                            <h4>Wo: '.$out_ort.'</h4>
+                            <p>'.$out_beschreibung.'</p>
+                            <a class="btn btn-primary info" id="'.$out_id.'">Mehr Infos <span class="glyphicon glyphicon-chevron-right"></span></a>
+                        </div>
+                    </div>
+                    <hr>';         
+        }
+        if($html == '' || $html == '<div class="row"><div class="col-md-12"><button style="width:100%" type="button" class="btn btn-primary" id="neu">Neu</button></div></div><hr>')
+        {
             echo '<div class="alert alert-info"><strong>Info!</strong> Du hast keine Veranstaltungen</div>';
         }
-        $conn->close();
         
-        echo $html;        
+        echo $html;
+        $stmt->close();       
     }
     
     function getVeranstaltungenInfos($verid, $userid)
     {
         $conn = connect();
-        $sql = "SELECT * FROM tblveranstaltungen WHERE ID = ". $verid;
-        $result = $conn->query($sql);
-        $html = "";
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            $html.= '';
-            if($row["Bild"] != null){
-                $html.='<div class="col-md-7">
-                                <img class="img-responsive" src="'.$row["Bild"].'" alt="">
+        
+        if (!($stmt = $conn->prepare("SELECT * FROM tblveranstaltungen WHERE ID = ". $verid))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        
+        $out_id    = NULL;
+        $out_name = NULL;
+        $out_ort = NULL;
+        $out_bild = NULL;
+        $out_beschreibung = NULL;
+        if (!$stmt->bind_result($out_id, $out_name,$out_ort,$out_bild,$out_beschreibung)) {
+            echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
+        }
+        
+        while ($stmt->fetch()) {
+            $html= '';
+            if($out_bild != null){
+                $html.='<div class="col-md-12">
+                                <img class="img-responsive" src="'.$out_bild.'" alt="">
                         </div>';
             }
             
             $html.= '<div class="col-md-12">
-                            <h3>'.$row["Name"].'</h3>
-                            <h4>Wo: '.$row["Ort"].'</h4>
-                            <p>'.$row["Beschreibung"].'</p>
+                            <h3>'.$out_name.'</h3>
+                            <h4>Wo: '.$out_ort.'</h4>
+                            <p>'.$out_beschreibung.'</p>
                         </div>
-                    <hr>';
-        } else {
+                    <hr>';                 
+            $html.= '<div class="col-md-12">
+                    <div class="btn-group btn-group" style="width:100%">
+                        <a class="btn btn-primary" id="Z|'.$userid.'" style="width:50%">Zusagen</a>
+                        <a class="btn btn-primary" id="A|'.$userid.'"style="width:50%">Absagen</a>
+                    </div></div> </br>';
+            $html.= '<div class="col-md-12">
+            <div class="btn-group-vertical" style="width:100%">
+                <button type="button" class="btn btn-primary" id="Zugesagt">Bereits Zugesagt <span class="badge">'.zugesagt($verid).'</span></button>
+                <div id="ZugesagtT" style="display: none;" class=" table-striped">'.zugesagtUser($verid).'</div>
+                <button type="button" class="btn btn-primary" id="Abgesagt">Bereits Abgesagt <span class="badge">'.abgesagt($verid).'</span></button>
+                <div id="AbgesagtT" style="display: none;" class=" table-striped">'.abgesagtUser($verid).'</div>            
+                <button type="button" class="btn btn-primary" id="Eingeladen">Eingeladen <span class="badge">'.eingeladen($verid).'</span></button>
+                <div id="EingeladenT" style="display: none;" class=" table-striped">'.eingeladenUser($verid).'</div>
+            </div></div>';
+        }
+        if(!isset($html))
+        {
             echo "0 results";
         }
         
-        $html.= '<div class="col-md-12">
-                <div class="btn-group btn-group" style="width:100%">
-                    <a class="btn btn-primary" id="Z|'.$userid.'" style="width:50%">Zusagen</a>
-                    <a class="btn btn-primary" id="A|'.$userid.'"style="width:50%">Absagen</a>
-                </div></div> </br>';
-        $html.= '<div class="col-md-12">
-        <div class="btn-group-vertical" style="width:100%">
-            <button type="button" class="btn btn-primary" id="Zugesagt">Bereits Zugesagt <span class="badge">'.zugesagt($verid).'</span></button>
-            <div id="ZugesagtT" style="display: none;" class=" table-striped">'.zugesagtUser($verid).'</div>
-            <button type="button" class="btn btn-primary" id="Abgesagt">Bereits Abgesagt <span class="badge">'.abgesagt($verid).'</span></button>
-            <div id="AbgesagtT" style="display: none;" class=" table-striped">'.abgesagtUser($verid).'</div>            
-            <button type="button" class="btn btn-primary" id="Eingeladen">Eingeladen <span class="badge">'.eingeladen($verid).'</span></button>
-            <div id="EingeladenT" style="display: none;" class=" table-striped">'.eingeladenUser($verid).'</div>
-        </div></div>';
-        
-        
-        $conn->close();
-        
-        echo $html;          
+        echo $html;
+        $stmt->close();          
     }
     
     function eingeladen($vid){
         $conn = connect();
-        $sql = "SELECT COUNT(*) FROM `tbluserveranstaltungen` WHERE fkveranstaltungenid = ".$vid." AND zusage is NULL";
-        $result = $conn->query($sql);
-        $row = $result->fetch_assoc();
-        $count = $row['COUNT(*)'];
-        $conn->close();
-        return $count;   
+        if (!($stmt = $conn->prepare("SELECT COUNT(*) FROM `tbluserveranstaltungen` WHERE fkveranstaltungenid = ".$vid." AND zusage is NULL"))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        }       
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }        
+        $out_COUNT    = NULL;
+        if (!$stmt->bind_result($out_COUNT)) {
+            echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
+        }        
+        while ($stmt->fetch()) {
+             return $out_COUNT;         
+        }
+        $stmt->close();
     }
     
     function zugesagt($vid){
         $conn = connect();
-        $sql = "SELECT COUNT(*) FROM tbluserveranstaltungen WHERE fkveranstaltungenid = ".$vid." AND zusage = 1";
-        $result = $conn->query($sql);
-        $row = $result->fetch_assoc();
-        $count = $row['COUNT(*)'];
-        $conn->close();
-        return $count;   
+        if (!($stmt = $conn->prepare("SELECT COUNT(*) FROM tbluserveranstaltungen WHERE fkveranstaltungenid = ".$vid." AND zusage = 1"))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        } 
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }        
+        $out_COUNT    = NULL;
+        if (!$stmt->bind_result($out_COUNT)) {
+            echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
+        }        
+        while ($stmt->fetch()) {
+             return $out_COUNT;       
+        }   
+        $stmt->close();
     }
     
     function abgesagt($vid){
         $conn = connect();
-        $sql = "SELECT COUNT(*) FROM tbluserveranstaltungen WHERE fkveranstaltungenid = ".$vid." AND zusage = 0";
-        $result = $conn->query($sql);
-        $row = $result->fetch_assoc();
-        $count = $row['COUNT(*)'];
-        $conn->close();
-        return $count;   
+        if (!($stmt = $conn->prepare("SELECT COUNT(*) FROM tbluserveranstaltungen WHERE fkveranstaltungenid = ".$vid." AND zusage = 0"))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        } 
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }        
+        $out_COUNT    = NULL;
+        if (!$stmt->bind_result($out_COUNT)) {
+            echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
+        }        
+        while ($stmt->fetch()) {
+             return $out_COUNT;     
+        }     
+        $stmt->close();
     }
 
     function zusagen($vid,$uid){
         $conn = connect();
-        $sql = "UPDATE tbluserveranstaltungen SET zusage = 1 WHERE fkveranstaltungenid = ".$vid." AND fkuserid = ". $uid;
-        $conn->query($sql);
-        $conn->close();
+        if (!($stmt = $conn->prepare("UPDATE tbluserveranstaltungen SET zusage = ? WHERE fkveranstaltungenid = ".$vid." AND fkuserid = ". $uid))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        $stmt->bind_param('i',$ja);
+        $ja=1;
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        $stmt->close();
     }
     
     function absagen($vid,$uid){
         $conn = connect();
-        $sql = "UPDATE tbluserveranstaltungen SET zusage = 0 WHERE fkveranstaltungenid = ".$vid." AND fkuserid = ". $uid;
-        $conn->query($sql);
-        $conn->close();
+        if (!($stmt = $conn->prepare("UPDATE tbluserveranstaltungen SET zusage = ? WHERE fkveranstaltungenid = ".$vid." AND fkuserid = ". $uid))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        $stmt->bind_param('i',$nein);
+        $nein = 0;
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        $stmt->close();
     }
     
     function eingeladenUser($vid){
         $conn = connect();
-        $sql = "SELECT `Name` FROM tbluser JOIN tbluserveranstaltungen ON ID = fkuserid WHERE fkveranstaltungenid = ".$vid." AND zusage is NULL";
-        $result = $conn->query($sql);
-        $html = "";
-        if ($result->num_rows > 0) {
-            while($row = $result->fetch_assoc()) {
-                $html.="<p class='unterbutton'>".$row["Name"]."</p>";
-            }
-        } else {
+        
+        if (!($stmt = $conn->prepare("SELECT `Name` FROM tbluser JOIN tbluserveranstaltungen ON ID = fkuserid WHERE fkveranstaltungenid = ".$vid." AND zusage is NULL"))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        } 
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }        
+        $out_name    = NULL;
+        if (!$stmt->bind_result($out_name)) {
+            echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
+        }
+        $html = "";      
+        while ($stmt->fetch()) {
+             $html.="<p class='unterbutton'>".$out_name."</p>";    
+        }
+        if($html == ""){
             $html = "<p class='unterbutton'>Keine</p>";
         }
-        $conn->close();
 
+        $stmt->close();
         return $html;   
     }
     
     function zugesagtUser($vid){
         $conn = connect();
-        $sql = "SELECT `Name` FROM tbluser JOIN tbluserveranstaltungen ON ID = fkuserid WHERE fkveranstaltungenid = ".$vid." AND zusage = 1";
-        $result = $conn->query($sql);
-        $html = "";
-        if ($result->num_rows > 0) {
-            while($row = $result->fetch_assoc()) {
-                $html.="<p class='unterbutton'>".$row["Name"]."</p>";
-            }
-        } else {
+        if (!($stmt = $conn->prepare("SELECT `Name` FROM tbluser JOIN tbluserveranstaltungen ON ID = fkuserid WHERE fkveranstaltungenid = ".$vid." AND zusage = 1"))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        } 
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }        
+        $out_name    = NULL;
+        if (!$stmt->bind_result($out_name)) {
+            echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
+        }
+        $html = "";      
+        while ($stmt->fetch()) {
+             $html.="<p class='unterbutton'>".$out_name."</p>";    
+        }
+        if($html == ""){
             $html = "<p class='unterbutton'>Keine</p>";
         }
-        $conn->close();
+        $stmt->close();
         return $html;   
     }
     
     function abgesagtUser($vid){
         $conn = connect();
-        $sql = "SELECT `Name` FROM tbluser JOIN tbluserveranstaltungen ON ID = fkuserid WHERE fkveranstaltungenid = ".$vid." AND zusage = 0";
-        $result = $conn->query($sql);
-        $html = "";
-        if ($result->num_rows > 0) {
-            while($row = $result->fetch_assoc()) {
-                $html.="<p class='unterbutton'>".$row["Name"]."</p>";
-            }
-        } else {
+        if (!($stmt = $conn->prepare("SELECT `Name` FROM tbluser JOIN tbluserveranstaltungen ON ID = fkuserid WHERE fkveranstaltungenid = ".$vid." AND zusage = 0"))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        } 
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }        
+        $out_name    = NULL;
+        if (!$stmt->bind_result($out_name)) {
+            echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
+        }
+        $html = "";      
+        while ($stmt->fetch()) {
+             $html.="<p class='unterbutton'>".$out_name."</p>";    
+        }
+        if($html == ""){
             $html = "<p class='unterbutton'>Keine</p>";
         }
-        $conn->close();
+        $stmt->close();
         return $html;   
     }    
 ?>

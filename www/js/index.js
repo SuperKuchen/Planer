@@ -38,6 +38,7 @@ $( "#login" ).click(function(){
         type:"POST",
         data:{'Email':$('#email').val(), 'Name':$('#name').val()},
         success:function(msg){
+            console.log(msg);
             if(msg != "null"){
                 window.location = "veranstaltungen.html";
             }
@@ -65,6 +66,10 @@ $( "#go" ).ready(function(){
                     window.location = "info.html?iid="+id;
                 });
                 
+                $( "#neu" ).click(function(){
+                    window.location = "neu.html";
+                });
+                
             },
             error:function(xhr, ajaxOptions, thrownError){
                 console.log("ERROR" + xhr.responseText + thrownError);
@@ -75,6 +80,26 @@ $( "#go" ).ready(function(){
 
 $().ready(function(){
     loadinfo($(this)[0].title);
+    
+    $( "#neu" ).click(function(){
+        $.ajax({
+            url:url+"fn=createVer",
+            type:"POST",
+            data:{'name':$('#name').val(), 'ort':$('#ort').val(), 'bild':$('#bild').val(), 'beschreibung':$('#beschreibung').val()},
+            success:function(msg){
+                console.log(msg);
+                if(msg != "null"){
+                    window.location = "einladen.html?iid="+msg;
+                }
+                else{
+                    $('#alert').html('<div class="alert alert-danger"><strong>Error!</strong> Informationen fehlen. Bitte überprüfen!</div>');
+                }
+            },
+            error:function(xhr, ajaxOptions, thrownError){
+                console.log("ERROR" + xhr.responseText + thrownError);
+            }
+        });
+    });
 })
 
 function loadinfo(titel)
@@ -88,15 +113,16 @@ function loadinfo(titel)
             success:function(msg){
                 $('#content').html(msg);
                 
-                
+                var vid = $.urlParam('iid');
                 $( ".btn" ).click(function(){
                     var id = $(this).attr('id').split('|');
                     if(id[0] == 'Z'){
                         $.ajax({
                             url:url+"fn=zusagen",
                             type:"POST",
-                            data:{'vid':id[1]}
+                            data:{'vid':vid}
                         }).done(function(asd){
+                                console.log(asd);
                                 loadinfo($(document)[0].title);
                             });
                     }
@@ -104,8 +130,9 @@ function loadinfo(titel)
                         $.ajax({
                             url:url+"fn=absagen",
                             type:"POST",
-                            data:{'vid':id[1]}
+                            data:{'vid':vid}
                         }).done(function(asd){
+                                console.log(asd);
                                 loadinfo($(document)[0].title);
                             });
                     }
