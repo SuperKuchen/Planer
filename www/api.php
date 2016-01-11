@@ -39,6 +39,13 @@ session_start();
                 }
                 break;
             }
+            case 'getUsers':{
+                if(isset($_POST['vid']))
+                {
+                    getUsers($_POST['vid']);
+                }
+                break;
+            }
         }
     }
 
@@ -93,22 +100,88 @@ session_start();
         $stmt->close();
     }
     
-    function createVer($uename,$ueort,$uebild,$uebeschreibung){
+    function getUsers($verid)
+    {       
         $conn = connect();
-        if (!($stmt = $conn->prepare("INSERT INTO `tblveranstaltungen`(`ID`, `Name`, `Ort`, `Bild`, `Beschreibung`) VALUES (?,?,?,?,?)"))) {
+        
+        $html = '<div class="col-md-12">';
+        
+        if (!($stmt = $conn->prepare("SELECT u.`ID`, u.`Name` FROM `tbluser` u JOIN `tbluserveranstaltungen` ON u.`ID` != `fkuserid` JOIN `tblveranstaltungen` v ON v.`ID` = `fkveranstaltungenid` WHERE `fkveranstaltungenid` = $verid;"))) {
             echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
         }
-        $stmt->bind_param('issss',$id,$name,$ort,$bild,$beschreibung);
-        $id=NULL;
-        $name=$uename;
-        $ort=$ueort;
-        $bild=$uebild;
-        $beschreibung=$uebeschreibung;
+        
         if (!$stmt->execute()) {
             echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
         }
-        echo $stmt->insert_id;
+        
+        $out_id    = NULL;
+        $out_name = NULL;
+        if (!$stmt->bind_result($out_id, $out_name)) {
+            echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
+        }
+        
+        while ($stmt->fetch()) {
+            $html .= '<div class="checkbox usernames">
+                     <label><input type="checkbox" value="$out_id">'.$out_name.'</label>
+                 </div>'; 
+        }
+        
+        if (!($stmt = $conn->prepare("SELECT u.`ID`, u.`Name` FROM `tbluser` u JOIN `tbluserveranstaltungen` ON u.`ID` = `fkuserid` JOIN `tblveranstaltungen` v ON v.`ID` = `fkveranstaltungenid` WHERE `fkveranstaltungenid` = $verid;"))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        
+        $out_id    = NULL;
+        $out_name = NULL;
+        if (!$stmt->bind_result($out_id, $out_name)) {
+            echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
+        }
+        
+        while ($stmt->fetch()) {
+            $html .= '<div class="checkbox usernames">
+                     <label><input type="checkbox" value="$out_id" checked>'.$out_name.'</label>
+                 </div>'; 
+        }
+        
         $stmt->close();
+        
+        echo '</div>'.$html;
+    }
+    
+    function createVer($uename,$ueort,$uebild,$uebeschreibung){
+        if($uename != '' && $ueort != '' && $uebild != '' && $uebeschreibung != ''){
+            $conn = connect();
+            if (!($stmt = $conn->prepare("INSERT INTO `tblveranstaltungen`(`ID`, `Name`, `Ort`, `Bild`, `Beschreibung`) VALUES (?,?,?,?,?)"))) {
+                echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+            }
+            $stmt->bind_param('issss',$id,$name,$ort,$bild,$beschreibung);
+            $id=NULL;
+            $name=$uename;
+            $ort=$ueort;
+            $bild=$uebild;
+            $beschreibung=$uebeschreibung;
+            if (!$stmt->execute()) {
+                echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+            }
+            echo $lastid = $stmt->insert_id;
+            
+            if (!($stmt = $conn->prepare("INSERT INTO `tbluserveranstaltungen`(`fkuserid`, `fkveranstaltungenid`, `zusage`) VALUES (?,?,?)"))) {
+                echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+            }
+            $stmt->bind_param('iii',$fkuserid,$fkveranstaltungenid,$zusage);
+            $fkuserid=1;
+            $fkveranstaltungenid=$lastid;
+            $zusage=1;
+            if (!$stmt->execute()) {
+                echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+            }
+            
+            $stmt->close();
+        }
+        else{echo 'null';}
     }
     
     function getVeranstaltungen($uid){

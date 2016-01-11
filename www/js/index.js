@@ -79,6 +79,25 @@ $( "#go" ).ready(function(){
 });
 
 $().ready(function(){
+    if($.urlParam('iid') != null)
+    {
+        $.ajax({
+            url:url+"fn=getUsers",
+            type:"POST",
+            data:{'vid':$.urlParam('iid')},
+            success:function(msg){
+                console.log(msg);
+                $('#content').html(msg);
+                if(msg != ""){
+                    
+                }
+            },
+            error:function(xhr, ajaxOptions, thrownError){
+                console.log("ERROR" + xhr.responseText + thrownError);
+            }
+        });
+    }
+    
     loadinfo($(this)[0].title);
     
     $( "#neu" ).click(function(){
