@@ -46,6 +46,13 @@ session_start();
                 }
                 break;
             }
+            case 'saveusers':{
+                if(isset($_POST['vid']) && isset($_POST['useres']))
+                {
+                    saveusers($_POST['vid'],$_POST['useres']);
+                }
+                break;
+            }
         }
     }
 
@@ -100,13 +107,48 @@ session_start();
         $stmt->close();
     }
     
+    function saveusers($verid,$useres){
+        $conn = connect();
+        if (!($stmt = $conn->prepare("INSERT IGNORE INTO `tbluserveranstaltungen`(`fkuserid`, `fkveranstaltungenid`, `zusage`) VALUES (?,?,?)"))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        foreach ($useres as $key => $value) {
+            if($value[1] == 'true'){
+                $stmt->bind_param('iii',$fkuserid,$fkveranstaltungenid,$zusaget);
+                $fkuserid=$value[0];
+                $fkveranstaltungenid=$verid;
+                $zusage=0;
+
+                if (!$stmt->execute()) {
+                    echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+                }
+            }
+        }
+        
+        if (!($stmt = $conn->prepare("DELETE FROM `tbluserveranstaltungen` WHERE `fkuserid` = ? AND `fkveranstaltungenid` = ?"))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        }
+        foreach ($useres as $key => $value) {
+            if($value[1] == 'false'){
+                $stmt->bind_param('ii',$value[0],$verid);
+
+                if (!$stmt->execute()) {
+                    echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+                }
+            }
+        }
+        
+        echo "done";
+
+    }
+    
     function getUsers($verid)
     {       
         $conn = connect();
         
         $html = '<div class="col-md-12">';
         
-        if (!($stmt = $conn->prepare("SELECT u.`ID`, u.`Name` FROM `tbluser` u JOIN `tbluserveranstaltungen` ON u.`ID` != `fkuserid` JOIN `tblveranstaltungen` v ON v.`ID` = `fkveranstaltungenid` WHERE `fkveranstaltungenid` = $verid;"))) {
+        if (!($stmt = $conn->prepare("SELECT `ID`, `Name` FROM `tbluser` WHERE `ID` NOT IN (SELECT `fkuserid` FROM `tbluserveranstaltungen` WHERE `fkveranstaltungenid` = $verid);"))) {
             echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
         }
         
@@ -122,11 +164,11 @@ session_start();
         
         while ($stmt->fetch()) {
             $html .= '<div class="checkbox usernames">
-                     <label><input type="checkbox" value="$out_id">'.$out_name.'</label>
+                     <label><input type="checkbox" value="'.$out_id.'">'.$out_name.'</label>
                  </div>'; 
         }
         
-        if (!($stmt = $conn->prepare("SELECT u.`ID`, u.`Name` FROM `tbluser` u JOIN `tbluserveranstaltungen` ON u.`ID` = `fkuserid` JOIN `tblveranstaltungen` v ON v.`ID` = `fkveranstaltungenid` WHERE `fkveranstaltungenid` = $verid;"))) {
+        if (!($stmt = $conn->prepare("SELECT `ID`, `Name` FROM `tbluser` WHERE `ID`  IN (SELECT `fkuserid` FROM `tbluserveranstaltungen` WHERE `fkveranstaltungenid` = $verid);"))) {
             echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
         }
         
@@ -142,7 +184,7 @@ session_start();
         
         while ($stmt->fetch()) {
             $html .= '<div class="checkbox usernames">
-                     <label><input type="checkbox" value="$out_id" checked>'.$out_name.'</label>
+                     <label><input type="checkbox" value="'.$out_id.'" checked>'.$out_name.'</label>
                  </div>'; 
         }
         
@@ -152,7 +194,7 @@ session_start();
     }
     
     function createVer($uename,$ueort,$uebild,$uebeschreibung){
-        if($uename != '' && $ueort != '' && $uebild != '' && $uebeschreibung != ''){
+        if($uename != '' && $ueort != '' && $uebeschreibung != ''){
             $conn = connect();
             if (!($stmt = $conn->prepare("INSERT INTO `tblveranstaltungen`(`ID`, `Name`, `Ort`, `Bild`, `Beschreibung`) VALUES (?,?,?,?,?)"))) {
                 echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
@@ -193,7 +235,7 @@ session_start();
         }
         
         $conn = connect();
-        if (!($stmt = $conn->prepare("SELECT ID,'Name',Ort,Bild,Beschreibung FROM tblveranstaltungen JOIN tbluserveranstaltungen ON ID = fkveranstaltungenid WHERE fkuserid = ".$uid))) {
+        if (!($stmt = $conn->prepare("SELECT ID,`Name`,Ort,Bild,Beschreibung FROM tblveranstaltungen JOIN tbluserveranstaltungen ON ID = fkveranstaltungenid WHERE fkuserid = ".$uid." ORDER BY ID DESC"))) {
             echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
         }
         

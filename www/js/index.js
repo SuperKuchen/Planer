@@ -89,13 +89,44 @@ $().ready(function(){
                 console.log(msg);
                 $('#content').html(msg);
                 if(msg != ""){
-                    
+                  
                 }
             },
             error:function(xhr, ajaxOptions, thrownError){
                 console.log("ERROR" + xhr.responseText + thrownError);
             }
         });
+        $( "#einladen" ).click(function(){
+            var useres = [];
+            $('.usernames  label input').each(function(){
+                var user
+                if($(this).prop('checked'))
+                {
+                    user = [this.value,true]
+                    useres.push(user);
+                }
+                else{
+                    user = [this.value,false]
+                    useres.push(user);
+                }
+            });
+            $.ajax({
+                url:url+"fn=saveusers",
+                type:"POST",
+                data:{'vid':$.urlParam('iid'), 'useres':useres},
+                success:function(msg){
+                    console.log(msg);
+                    $('#content').html(msg);
+                    if(msg == "done"){
+                        window.location = "info.html?iid="+$.urlParam('iid');
+                        loadinfo("Jan's Planer Info");
+                    }
+                },
+                error:function(xhr, ajaxOptions, thrownError){
+                    console.log("ERROR" + xhr.responseText + thrownError);
+                }
+            });
+         });
     }
     
     loadinfo($(this)[0].title);
