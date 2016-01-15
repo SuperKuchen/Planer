@@ -1,5 +1,5 @@
-var url = "http://beckmannjan.de/api/api.php?";
-//var url = "api/api.php?";
+//var url = "http://beckmannjan.de/api/api.php?";
+var url = "api/api.php?";
 var app = {
     // Application Constructor
     initialize: function() {
@@ -32,14 +32,34 @@ var app = {
     }
 };
 
+function reg(){
+    $.ajax({
+        url:url+"fn=newUser",
+        type:"POST",
+        data:{'Vorname':$('#vorname').val(), 'Nachname':$('#nachname').val(),'Adresse':$('#addresse').val(), 'Email':$('#email').val(),'Password':$('#passwort').val()},
+        success:function(msg){
+            console.log(msg);
+            if(msg == "done"){
+                window.location = "veranstaltungen.html";
+            }
+            else{
+                $('#alert').html('<div class="alert alert-danger"><strong>Error!</strong> Etwas ist ungültig. Bitte überprüfen!</div>');
+            }
+        },
+        error:function(xhr, ajaxOptions, thrownError){
+            console.log("ERROR" + xhr.responseText + thrownError);
+        }
+    });
+};
+
 $( "#login" ).click(function(){
     $.ajax({
         url:url+"fn=getUser",
         type:"POST",
-        data:{'Email':$('#email').val(), 'Name':$('#name').val()},
+        data:{'Email':$('#email').val(), 'passwort':$('#passwort').val()},
         success:function(msg){
             console.log(msg);
-            if(msg != "null"){
+            if(msg == "login"){
                 window.location = "veranstaltungen.html";
             }
             else{
@@ -53,22 +73,33 @@ $( "#login" ).click(function(){
 });
 
 $( "#go" ).ready(function(){
+    if($(this)[0].title == "Jan's Planer"){
+        $.ajax({
+            url:url+"fn=logout"
+        });
+    }
     if($(this)[0].title == "Jan's Planer Veranstaltungen")
     {
         $.ajax({
             url:url+"fn=getVeranstaltungen",
             type:"GET",
             success:function(msg){
-                $('#content').html(msg);
-                
-                $( ".info" ).click(function(){
-                    var id = $(this).attr('id');
-                    window.location = "info.html?iid="+id;
-                });
-                
-                $( "#neu" ).click(function(){
-                    window.location = "neu.html";
-                });
+                if(msg == "no login")
+                {
+                    window.location = "index.html";
+                }
+                else{
+                    $('#content').html(msg);
+                    
+                    $( ".info" ).click(function(){
+                        var id = $(this).attr('id');
+                        window.location = "info.html?iid="+id;
+                    });
+                    
+                    $( "#neu" ).click(function(){
+                        window.location = "neu.html";
+                    });
+                }
                 
             },
             error:function(xhr, ajaxOptions, thrownError){
@@ -77,9 +108,8 @@ $( "#go" ).ready(function(){
         });
     }
 });
-
 $().ready(function(){
-    if($.urlParam('iid') != null)
+    if($.urlParam('iid') != null && $(this)[0].title == "Jan's Planer Einladen")
     {
         $.ajax({
             url:url+"fn=getUsers",
@@ -90,6 +120,10 @@ $().ready(function(){
                 $('#content').html(msg);
                 if(msg != ""){
                   
+                }
+                if(msg == "no login")
+                {
+                    window.location = "index.html";
                 }
             },
             error:function(xhr, ajaxOptions, thrownError){
@@ -121,6 +155,10 @@ $().ready(function(){
                         window.location = "info.html?iid="+$.urlParam('iid');
                         loadinfo("Jan's Planer Info");
                     }
+                    if(msg == "no login")
+                    {
+                        window.location = "index.html";
+                    }
                 },
                 error:function(xhr, ajaxOptions, thrownError){
                     console.log("ERROR" + xhr.responseText + thrownError);
@@ -144,6 +182,10 @@ $().ready(function(){
                 else{
                     $('#alert').html('<div class="alert alert-danger"><strong>Error!</strong> Informationen fehlen. Bitte überprüfen!</div>');
                 }
+                if(msg == "no login")
+                {
+                    window.location = "index.html";
+                }
             },
             error:function(xhr, ajaxOptions, thrownError){
                 console.log("ERROR" + xhr.responseText + thrownError);
@@ -161,6 +203,10 @@ function loadinfo(titel)
             type:"POST",
             data:{'vid':iid},
             success:function(msg){
+                if(msg == "no login")
+                {
+                    window.location = "index.html";
+                }
                 $('#content').html(msg);
                 
                 var vid = $.urlParam('iid');

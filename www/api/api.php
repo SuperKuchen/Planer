@@ -8,28 +8,35 @@ session_start();
             case 'getUser':{
                 session_destroy();
                 session_start();
-                if(isset($_POST['Name']) && isset($_POST['Email']))
-                    getUser($_POST['Name'],$_POST['Email']);
+                if(isset($_POST['passwort']) && isset($_POST['Email'])){
+                    $pass = md5($_POST['passwort']);
+                    getUser($_POST['Email'],$pass);
+                }
+                exit;
                 break;
             }
             case 'getVeranstaltungen':{
                 if(isset($_SESSION['user']['id']))
                     getVeranstaltungen($_SESSION['user']['id']);
+                exit;
                 break;
             }
             case 'getVeranstaltungenInfos':{
                 if(isset($_POST['vid']) && isset($_SESSION['user']['id']))
                     getVeranstaltungenInfos($_POST['vid'],$_SESSION['user']['id']);
+                exit;
                 break;
             }
             case 'zusagen':{
                 if(isset($_POST['vid']) && isset($_SESSION['user']['id']))
                     zusagen($_POST['vid'],$_SESSION['user']['id']);
+                exit;
                 break;
             }
             case 'absagen':{
                 if(isset($_POST['vid']) && isset($_SESSION['user']['id']))
                     absagen($_POST['vid'],$_SESSION['user']['id']);
+                exit;
                 break;
             }
             case 'createVer':{
@@ -37,6 +44,7 @@ session_start();
                 {
                     createVer($_POST['name'], $_POST['ort'], $_POST['bild'], $_POST['beschreibung']);
                 }
+                exit;
                 break;
             }
             case 'getUsers':{
@@ -44,6 +52,7 @@ session_start();
                 {
                     getUsers($_POST['vid']);
                 }
+                exit;
                 break;
             }
             case 'saveusers':{
@@ -51,8 +60,34 @@ session_start();
                 {
                     saveusers($_POST['vid'],$_POST['useres']);
                 }
+                exit;
                 break;
             }
+            case 'newUser':{
+                if(isset($_POST['Vorname']) && isset($_POST['Nachname']) && isset($_POST['Email']) && isset($_POST['Password']))
+                {
+                    if(isset($_POST['Adresse'])){
+                        $adresse = $_POST['Adresse'];
+                    }
+                    else{
+                        $adresse = null;
+                    }
+                    if($_POST['Vorname'] != "" && $_POST['Nachname'] != "" && $_POST['Email'] != "" && $_POST['Password'] != ""){
+                        $pass = md5($_POST['Password']);
+                        newusers($_POST['Vorname'], $_POST['Nachname'], $adresse, $_POST['Email'], $pass);
+                    }
+                }
+                exit;
+                break;
+            }
+            case 'logout':{
+                session_destroy();
+                exit;
+                break;
+            }
+        }
+        if(!isset($_SESSION['user']['id'])){
+            echo "no login";
         }
     }
 
@@ -72,11 +107,11 @@ session_start();
         return $conn;
     }
     
-    function getUser($name, $email)
+    function getUser($email, $password)
     {       
         $conn = connect();
         
-        if (!($stmt = $conn->prepare("SELECT * FROM tbluser WHERE Name = '".$name."' AND Email = '".$email."'"))) {
+        if (!($stmt = $conn->prepare("SELECT * FROM tbluser WHERE Email = '".$email."' AND Password = '".$password."'"))) {
             echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
         }
         
@@ -87,15 +122,18 @@ session_start();
         $out_id    = NULL;
         $out_name = NULL;
         $out_email = NULL;
-        if (!$stmt->bind_result($out_id, $out_name,$out_email)) {
+        if (!$stmt->bind_result($out_id, $out_vorname, $out_name, $out_adresse, $out_email, $out_passwort)) {
             echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
         }
         
         while ($stmt->fetch()) {
             $user = array(
                 "id" => $out_id,
+                "Vorname"=>$out_vorname,
                 "Name" => $out_name,
-                "Email" => $out_email
+                "Adresse" => $out_adresse,
+                "Email" => $out_email,
+                "password" => $out_passwort
             );
             $_SESSION['user'] = $user;  
             echo "login";          
@@ -105,6 +143,23 @@ session_start();
             echo "null";
         }
         $stmt->close();
+    }
+    
+    function newusers($vorname,$nachname,$adresse,$email,$password){
+        $conn = connect();
+        if (!($stmt = $conn->prepare("INSERT INTO `tbluser` VALUES (?,?,?,?,?,?)"))) {
+            echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
+        }
+
+        $stmt->bind_param('isssss',$id,$vorname,$nachname,$adresse,$email,$password);
+        $id=null;   
+            
+        if (!$stmt->execute()) {
+            echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
+        }
+                
+        echo "done";
+
     }
     
     function saveusers($verid,$useres){
@@ -148,7 +203,7 @@ session_start();
         
         $html = '<div class="col-md-12">';
         
-        if (!($stmt = $conn->prepare("SELECT `ID`, `Name` FROM `tbluser` WHERE `ID` NOT IN (SELECT `fkuserid` FROM `tbluserveranstaltungen` WHERE `fkveranstaltungenid` = $verid);"))) {
+        if (!($stmt = $conn->prepare("SELECT `ID`, `Vorname`, `Name` FROM `tbluser` WHERE `ID` NOT IN (SELECT `fkuserid` FROM `tbluserveranstaltungen` WHERE `fkveranstaltungenid` = $verid);"))) {
             echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
         }
         
@@ -158,17 +213,18 @@ session_start();
         
         $out_id    = NULL;
         $out_name = NULL;
-        if (!$stmt->bind_result($out_id, $out_name)) {
+        $out_vorname = NULL;
+        if (!$stmt->bind_result($out_id,$out_vorname, $out_name)) {
             echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
         }
         
         while ($stmt->fetch()) {
             $html .= '<div class="checkbox usernames">
-                     <label><input type="checkbox" value="'.$out_id.'">'.$out_name.'</label>
+                     <label><input type="checkbox" value="'.$out_id.'">'.$out_vorname ." ". $out_name.'</label>
                  </div>'; 
         }
         
-        if (!($stmt = $conn->prepare("SELECT `ID`, `Name` FROM `tbluser` WHERE `ID`  IN (SELECT `fkuserid` FROM `tbluserveranstaltungen` WHERE `fkveranstaltungenid` = $verid);"))) {
+        if (!($stmt = $conn->prepare("SELECT `ID`, `Vorname`, `Name` FROM `tbluser` WHERE `ID`  IN (SELECT `fkuserid` FROM `tbluserveranstaltungen` WHERE `fkveranstaltungenid` = $verid);"))) {
             echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
         }
         
@@ -178,13 +234,14 @@ session_start();
         
         $out_id    = NULL;
         $out_name = NULL;
-        if (!$stmt->bind_result($out_id, $out_name)) {
+        $out_vorname = NULL;
+        if (!$stmt->bind_result($out_id, $out_vorname, $out_name)) {
             echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
         }
         
         while ($stmt->fetch()) {
             $html .= '<div class="checkbox usernames">
-                     <label><input type="checkbox" value="'.$out_id.'" checked>'.$out_name.'</label>
+                     <label><input type="checkbox" value="'.$out_id.'" checked>'.$out_vorname ." ". $out_name.'</label>
                  </div>'; 
         }
         
@@ -422,19 +479,19 @@ session_start();
     function eingeladenUser($vid){
         $conn = connect();
         
-        if (!($stmt = $conn->prepare("SELECT `Name` FROM tbluser JOIN tbluserveranstaltungen ON ID = fkuserid WHERE fkveranstaltungenid = ".$vid." AND zusage is NULL"))) {
+        if (!($stmt = $conn->prepare("SELECT `Vorname`, `Name` FROM tbluser JOIN tbluserveranstaltungen ON ID = fkuserid WHERE fkveranstaltungenid = ".$vid." AND zusage is NULL"))) {
             echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
         } 
         if (!$stmt->execute()) {
             echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
         }        
         $out_name    = NULL;
-        if (!$stmt->bind_result($out_name)) {
+        if (!$stmt->bind_result($out_vorname, $out_name)) {
             echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
         }
         $html = "";      
         while ($stmt->fetch()) {
-             $html.="<p class='unterbutton'>".$out_name."</p>";    
+             $html.="<p class='unterbutton'>".$out_vorname ." ". $out_name."</p>";    
         }
         if($html == ""){
             $html = "<p class='unterbutton'>Keine</p>";
@@ -446,19 +503,19 @@ session_start();
     
     function zugesagtUser($vid){
         $conn = connect();
-        if (!($stmt = $conn->prepare("SELECT `Name` FROM tbluser JOIN tbluserveranstaltungen ON ID = fkuserid WHERE fkveranstaltungenid = ".$vid." AND zusage = 1"))) {
+        if (!($stmt = $conn->prepare("SELECT `Vorname`, `Name` FROM tbluser JOIN tbluserveranstaltungen ON ID = fkuserid WHERE fkveranstaltungenid = ".$vid." AND zusage = 1"))) {
             echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
         } 
         if (!$stmt->execute()) {
             echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
         }        
         $out_name    = NULL;
-        if (!$stmt->bind_result($out_name)) {
+        if (!$stmt->bind_result($out_vorname,$out_name)) {
             echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
         }
         $html = "";      
         while ($stmt->fetch()) {
-             $html.="<p class='unterbutton'>".$out_name."</p>";    
+             $html.="<p class='unterbutton'>".$out_vorname ." ". $out_name."</p>";    
         }
         if($html == ""){
             $html = "<p class='unterbutton'>Keine</p>";
@@ -469,19 +526,19 @@ session_start();
     
     function abgesagtUser($vid){
         $conn = connect();
-        if (!($stmt = $conn->prepare("SELECT `Name` FROM tbluser JOIN tbluserveranstaltungen ON ID = fkuserid WHERE fkveranstaltungenid = ".$vid." AND zusage = 0"))) {
+        if (!($stmt = $conn->prepare("SELECT `Vorname`, `Name` FROM tbluser JOIN tbluserveranstaltungen ON ID = fkuserid WHERE fkveranstaltungenid = ".$vid." AND zusage = 0"))) {
             echo "Prepare failed: (" . $conn->errno . ") " . $conn->error;
         } 
         if (!$stmt->execute()) {
             echo "Execute failed: (" . $conn->errno . ") " . $conn->error;
         }        
         $out_name    = NULL;
-        if (!$stmt->bind_result($out_name)) {
+        if (!$stmt->bind_result($out_vorname, $out_name)) {
             echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
         }
         $html = "";      
         while ($stmt->fetch()) {
-             $html.="<p class='unterbutton'>".$out_name."</p>";    
+             $html.="<p class='unterbutton'>".$out_vorname ." ". $out_name."</p>";    
         }
         if($html == ""){
             $html = "<p class='unterbutton'>Keine</p>";
