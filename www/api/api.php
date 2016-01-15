@@ -58,9 +58,9 @@ session_start();
 
     function connect()
     {
-        $servername = "localhost";
-        $username = "root";
-        $password = "";
+        $servername = "212.144.99.249:3306";
+        $username = "qrrgp_planer";
+        $password = "Izw05%d2";
         $dbname = "planer";
 
         // Create connection

@@ -1,5 +1,5 @@
 //var url = "http://10.1.20.140/webapps/Jans%20Planer/www/api.php?";
-var url = "api.php?";
+var url = "api/api.php?";
 var app = {
     // Application Constructor
     initialize: function() {
