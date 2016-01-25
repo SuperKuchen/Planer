@@ -2,25 +2,25 @@
 var url = "api/api.php?";
 var app = {
     // Application Constructor
-    initialize: function() {
+    initialize: function () {
         this.bindEvents();
     },
     // Bind Event Listeners
     //
     // Bind any events that are required on startup. Common events are:
     // 'load', 'deviceready', 'offline', and 'online'.
-    bindEvents: function() {
+    bindEvents: function () {
         document.addEventListener('deviceready', this.onDeviceReady, false);
     },
     // deviceready Event Handler
     //
     // The scope of 'this' is the event. In order to call the 'receivedEvent'
     // function, we must explicitly call 'app.receivedEvent(...);'
-    onDeviceReady: function() {
+    onDeviceReady: function () {
         app.receivedEvent('deviceready');
     },
     // Update DOM on a Received Event
-    receivedEvent: function(id) {
+    receivedEvent: function (id) {
         var parentElement = document.getElementById(id);
         var listeningElement = parentElement.querySelector('.listening');
         var receivedElement = parentElement.querySelector('.received');
@@ -32,233 +32,235 @@ var app = {
     }
 };
 
-function reg(){
+function reg() {
     $.ajax({
-        url:url+"fn=newUser",
-        type:"POST",
-        data:{'Vorname':$('#vorname').val(), 'Nachname':$('#nachname').val(),'Adresse':$('#addresse').val(), 'Email':$('#email').val(),'Password':$('#passwort').val()},
-        success:function(msg){
+        url: url + "fn=newUser",
+        type: "POST",
+        data: { 'Vorname': $('#vorname').val(), 'Nachname': $('#nachname').val(), 'Adresse': $('#addresse').val(), 'Email': $('#email').val(), 'Password': $('#passwort').val() },
+        success: function (msg) {
             console.log(msg);
-            if(msg == "done"){
+            if (msg == "done") {
                 window.location = "veranstaltungen.html";
             }
-            else{
+            else if (msg == "Email") {
+                $('#alert').html('<div class="alert alert-danger"><strong>Error!</strong> E-mail bereits vorhanden</div>');
+            }
+            else {
                 $('#alert').html('<div class="alert alert-danger"><strong>Error!</strong> Etwas ist ungültig. Bitte überprüfen!</div>');
             }
         },
-        error:function(xhr, ajaxOptions, thrownError){
-            console.log("ERROR" + xhr.responseText + thrownError);
+        error: function (xhr, ajaxOptions, thrownError) {
+            console.log("ERROR " + xhr.responseText + thrownError);
         }
     });
 };
 
-$( "#login" ).click(function(){
+$("#login").click(function () {
     $.ajax({
-        url:url+"fn=getUser",
-        type:"POST",
-        data:{'Email':$('#email').val(), 'passwort':$('#passwort').val()},
-        success:function(msg){
-            console.log(msg);
-            if(msg == "login"){
+        url: url + "fn=getUser",
+        type: "POST",
+        data: { 'Email': $('#email').val(), 'passwort': $('#passwort').val() },
+        success: function (msg) {
+            if (msg == "login") {
                 window.location = "veranstaltungen.html";
             }
-            else{
+            else {
                 $('#alert').html('<div class="alert alert-danger"><strong>Error!</strong> Name oder Email falsch. Bitte überprüfen!</div>');
             }
         },
-        error:function(xhr, ajaxOptions, thrownError){
+        error: function (xhr, ajaxOptions, thrownError) {
             console.log("ERROR" + xhr.responseText + thrownError);
         }
     });
 });
 
-$( "#go" ).ready(function(){
-    if($(this)[0].title == "Jan's Planer"){
+$("#go").ready(function () {
+    if ($(this)[0].title == "Jan's Planer") {
         $.ajax({
-            url:url+"fn=logout"
+            url: url + "fn=logout"
         });
     }
-    if($(this)[0].title == "Jan's Planer Veranstaltungen")
-    {
+    if ($(this)[0].title == "Jan's Planer Veranstaltungen") {
         $.ajax({
-            url:url+"fn=getVeranstaltungen",
-            type:"GET",
-            success:function(msg){
-                if(msg == "no login")
-                {
+            url: url + "fn=getVeranstaltungen",
+            type: "GET",
+            success: function (msg) {
+                if (msg == "no login") {
                     window.location = "index.html";
                 }
-                else{
+                else {
                     $('#content').html(msg);
-                    
-                    $( ".info" ).click(function(){
+
+                    $(".info").click(function () {
                         var id = $(this).attr('id');
-                        window.location = "info.html?iid="+id;
+                        window.location = "info.html?iid=" + id;
                     });
-                    
-                    $( "#neu" ).click(function(){
+
+                    $("#neu").click(function () {
                         window.location = "neu.html";
                     });
                 }
-                
+
             },
-            error:function(xhr, ajaxOptions, thrownError){
+            beforeSend: function () {
+                $('#content').html('<img style="text-align: center;" src="img/ajax-loader.gif" alt="lade" />');
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
                 console.log("ERROR" + xhr.responseText + thrownError);
             }
         });
     }
 });
-$().ready(function(){
-    if($.urlParam('iid') != null && $(this)[0].title == "Jan's Planer Einladen")
-    {
+$().ready(function () {
+    if ($.urlParam('iid') != null && $(this)[0].title == "Jan's Planer Einladen") {
         $.ajax({
-            url:url+"fn=getUsers",
-            type:"POST",
-            data:{'vid':$.urlParam('iid')},
-            success:function(msg){
+            url: url + "fn=getUsers",
+            type: "POST",
+            data: { 'vid': $.urlParam('iid') },
+            success: function (msg) {
                 console.log(msg);
                 $('#content').html(msg);
-                if(msg != ""){
-                  
+                if (msg != "") {
+
                 }
-                if(msg == "no login")
-                {
+                if (msg == "no login") {
                     window.location = "index.html";
                 }
             },
-            error:function(xhr, ajaxOptions, thrownError){
+            beforeSend: function () {
+                $('#content').html('<img style="text-align: center;" src="img/ajax-loader.gif" alt="lade" />');
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
                 console.log("ERROR" + xhr.responseText + thrownError);
             }
         });
-        $( "#einladen" ).click(function(){
+        $("#einladen").click(function () {
             var useres = [];
-            $('.usernames  label input').each(function(){
+            $('.usernames  label input').each(function () {
                 var user
-                if($(this).prop('checked'))
-                {
-                    user = [this.value,true]
+                if ($(this).prop('checked')) {
+                    user = [this.value, true]
                     useres.push(user);
                 }
-                else{
-                    user = [this.value,false]
+                else {
+                    user = [this.value, false]
                     useres.push(user);
                 }
             });
             $.ajax({
-                url:url+"fn=saveusers",
-                type:"POST",
-                data:{'vid':$.urlParam('iid'), 'useres':useres},
-                success:function(msg){
+                url: url + "fn=saveusers",
+                type: "POST",
+                data: { 'vid': $.urlParam('iid'), 'useres': useres },
+                success: function (msg) {
                     console.log(msg);
                     $('#content').html(msg);
-                    if(msg == "done"){
-                        window.location = "info.html?iid="+$.urlParam('iid');
+                    if (msg == "done") {
+                        window.location = "info.html?iid=" + $.urlParam('iid');
                         loadinfo("Jan's Planer Info");
                     }
-                    if(msg == "no login")
-                    {
+                    if (msg == "no login") {
                         window.location = "index.html";
                     }
                 },
-                error:function(xhr, ajaxOptions, thrownError){
+                beforeSend: function () {
+                    $('#content').html('<img style="text-align: center;" src="img/ajax-loader.gif" alt="lade" />');
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
                     console.log("ERROR" + xhr.responseText + thrownError);
                 }
             });
-         });
+        });
     }
-    
+
     loadinfo($(this)[0].title);
-    
-    $( "#neu" ).click(function(){
+
+    $("#neu").click(function () {
         $.ajax({
-            url:url+"fn=createVer",
-            type:"POST",
-            data:{'name':$('#name').val(), 'ort':$('#ort').val(), 'bild':$('#bild').val(), 'beschreibung':$('#beschreibung').val()},
-            success:function(msg){
+            url: url + "fn=createVer",
+            type: "POST",
+            data: { 'name': $('#name').val(), 'ort': $('#ort').val(), 'bild': $('#bild').val(), 'beschreibung': $('#beschreibung').val() },
+            success: function (msg) {
                 console.log(msg);
-                if(msg != "null"){
-                    window.location = "einladen.html?iid="+msg;
+                if (msg != "null") {
+                    window.location = "einladen.html?iid=" + msg;
                 }
-                else{
+                else {
                     $('#alert').html('<div class="alert alert-danger"><strong>Error!</strong> Informationen fehlen. Bitte überprüfen!</div>');
                 }
-                if(msg == "no login")
-                {
+                if (msg == "no login") {
                     window.location = "index.html";
                 }
             },
-            error:function(xhr, ajaxOptions, thrownError){
+            error: function (xhr, ajaxOptions, thrownError) {
                 console.log("ERROR" + xhr.responseText + thrownError);
             }
         });
     });
 })
 
-function loadinfo(titel)
-{
-    if(titel == "Jan's Planer Info"){
+function loadinfo(titel) {
+    if (titel == "Jan's Planer Info") {
         var iid = $.urlParam('iid');
         $.ajax({
-            url:url+"fn=getVeranstaltungenInfos",
-            type:"POST",
-            data:{'vid':iid},
-            success:function(msg){
-                if(msg == "no login")
-                {
+            url: url + "fn=getVeranstaltungenInfos",
+            type: "POST",
+            data: { 'vid': iid },
+            success: function (msg) {
+                if (msg == "no login") {
                     window.location = "index.html";
                 }
                 $('#content').html(msg);
-                
+
                 var vid = $.urlParam('iid');
-                $( ".btn" ).click(function(){
+                $(".btn").click(function () {
                     var id = $(this).attr('id').split('|');
-                    if(id[0] == 'Z'){
+                    if (id[0] == 'Z') {
                         $.ajax({
-                            url:url+"fn=zusagen",
-                            type:"POST",
-                            data:{'vid':vid}
-                        }).done(function(asd){
-                                console.log(asd);
-                                loadinfo($(document)[0].title);
-                            });
+                            url: url + "fn=zusagen",
+                            type: "POST",
+                            data: { 'vid': vid }
+                        }).done(function (asd) {
+                            console.log(asd);
+                            loadinfo($(document)[0].title);
+                        });
                     }
-                    else if(id[0] == 'A'){
+                    else if (id[0] == 'A') {
                         $.ajax({
-                            url:url+"fn=absagen",
-                            type:"POST",
-                            data:{'vid':vid}
-                        }).done(function(asd){
-                                console.log(asd);
-                                loadinfo($(document)[0].title);
-                            });
+                            url: url + "fn=absagen",
+                            type: "POST",
+                            data: { 'vid': vid }
+                        }).done(function (asd) {
+                            console.log(asd);
+                            loadinfo($(document)[0].title);
+                        });
                     }
 
                 });
-                
-                                
-                $( "button.btn" ).click(function() {
-                    var el = "#"+$(this).attr('id')+"T";
-                    if($(el).attr('style') == 'display: none;'){                      
+
+
+                $("button.btn").click(function () {
+                    var el = "#" + $(this).attr('id') + "T";
+                    if ($(el).attr('style') == 'display: none;') {
                         $(el).slideDown();
                     }
-                    else{
+                    else {
                         $(el).slideUp();
                     }
                 });
             },
-            error:function(xhr, ajaxOptions, thrownError){
+            error: function (xhr, ajaxOptions, thrownError) {
                 console.log("ERROR" + xhr.responseText + thrownError);
             }
         });
     }
 }
 
-$.urlParam = function(name){
+$.urlParam = function (name) {
     var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
-    if (results==null){
-       return null;
+    if (results == null) {
+        return null;
     }
-    else{
-       return results[1] || 0;
+    else {
+        return results[1] || 0;
     }
 }
