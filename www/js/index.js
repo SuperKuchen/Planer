@@ -40,7 +40,7 @@ function reg() {
         success: function (msg) {
             console.log(msg);
             if (msg == "done") {
-                window.location = "veranstaltungen.html";
+                window.location = "indexreg.html";
             }
             else if (msg == "Email") {
                 $('#alert').html('<div class="alert alert-danger"><strong>Error!</strong> E-mail bereits vorhanden</div>');
@@ -61,6 +61,7 @@ $("#login").click(function () {
         type: "POST",
         data: { 'Email': $('#email').val(), 'passwort': $('#passwort').val() },
         success: function (msg) {
+            console.log(msg);
             if (msg == "login") {
                 window.location = "veranstaltungen.html";
             }

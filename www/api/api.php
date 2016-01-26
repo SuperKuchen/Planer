@@ -110,7 +110,7 @@ function connect() {
 function getUser($email, $password) {
     $conn = connect();
 
-    if (!($stmt = $conn->prepare("SELECT * FROM tbluser WHERE Email = '".$email."' AND Password = '".$password."'"))) {
+    if (!($stmt = $conn->prepare("SELECT * FROM tbluser WHERE Email = '".$email."' AND Password = '".$password."' AND Active = 1"))) {
         echo "Prepare failed: (".$conn->errno.") ".$conn->error;
     }
 
@@ -121,7 +121,9 @@ function getUser($email, $password) {
     $out_id = NULL;
     $out_name = NULL;
     $out_email = NULL;
-    if (!$stmt->bind_result($out_id, $out_vorname, $out_name, $out_adresse, $out_email, $out_passwort)) {
+    $out_active = NULL;
+    $out_key = NULL;
+    if (!$stmt->bind_result($out_id, $out_vorname, $out_name, $out_adresse, $out_email, $out_passwort,$out_active,$out_key)) {
         echo "Binding output parameters failed: (".$stmt->errno.") ".$stmt->error;
     }
 
@@ -398,7 +400,14 @@ function getVeranstaltungenInfos($verid, $userid) {
                 <div id="AbgesagtT" style="display: none;" class=" table-striped">'.abgesagtUser($verid).'</div>            
                 <button type="button" class="btn btn-primary" id="Eingeladen">Eingeladen <span class="badge">'.eingeladen($verid).'</span></button>
                 <div id="EingeladenT" style="display: none;" class=" table-striped">'.eingeladenUser($verid).'</div>
-            </div></div>';
+            </div>';
+        if($userid == 1){
+            $html .= '<form action="einladen.html" method="get" >
+                        <input type="hidden" name="iid" value='.$verid.'>
+                        <button type="submit" class="btn btn-primary" style="width:100%">Eingeladen/Ausladen</button>
+                    </form>
+                </div>';
+        }
     }
     if (!isset($html)) {
         echo "0 results";
