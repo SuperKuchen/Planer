@@ -1,5 +1,5 @@
-//var url = "http://beckmannjan.de/api/api.php?";
-var url = "api/api.php?";
+var url = "http://beckmannjan.de/api/api.php?";
+//var url = "api/api.php?";
 var app = {
     // Application Constructor
     initialize: function () {
