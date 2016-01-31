@@ -32,6 +32,14 @@ var app = {
     }
 };
 
+console.log(window.localStorage.getItem("username"));
+if(window.localStorage.getItem("username") !== null && window.localStorage.getItem("password") !== null)
+{
+    $("#email").val(window.localStorage.getItem("username"));
+    $("#passwort").val(window.localStorage.getItem("password"));
+    $("#rememberme").prop('checked', true);
+}
+
 function reg() {
     $.ajax({
         url: url + "fn=newUser",
@@ -56,17 +64,29 @@ function reg() {
 };
 
 $("#login").click(function () {
+    var username = $("#email").val();
+    var password = $("#passwort").val();
+    
+    var CheckboxValue=$("#rememberme").prop('checked');
+    if (CheckboxValue== true){
+        console.log(username);
+        window.localStorage.setItem("username", username);
+        window.localStorage.setItem("password", password);
+    }
+    else{
+        window.localStorage.clear();
+    }
     $.ajax({
         url: url + "fn=getUser",
         type: "POST",
-        data: { 'Email': $('#email').val(), 'passwort': $('#passwort').val() },
+        data: { 'Email': username, 'passwort': password },
         success: function (msg) {
             console.log(msg);
             if (msg == "login") {
                 window.location = "veranstaltungen.html";
             }
             else {
-                $('#alert').html('<div class="alert alert-danger"><strong>Error!</strong> Name oder Email falsch. Bitte überprüfen!</div>');
+                $('#alert').html('<div class="alert alert-danger"><strong>Error!</strong> E-Mail oder Passwort falsch. Bitte überprüfen!</div>');
             }
         },
         error: function (xhr, ajaxOptions, thrownError) {
