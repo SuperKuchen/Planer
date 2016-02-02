@@ -1,4 +1,4 @@
-var url = "http://beckmannjan.de/api/api.php?";
+var url = "https://beckmannjan.de/api/api.php?";
 //var url = "api/api.php?";
 var app = {
     // Application Constructor
@@ -32,7 +32,6 @@ var app = {
     }
 };
 
-console.log(window.localStorage.getItem("username"));
 if(window.localStorage.getItem("username") !== null && window.localStorage.getItem("password") !== null)
 {
     $("#email").val(window.localStorage.getItem("username"));
